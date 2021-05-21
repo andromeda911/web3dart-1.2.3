@@ -330,7 +330,7 @@ class Web3Client {
           if (to != null) 'to': to.hex,
           if (amountOfGas != null) 'gas': '0x${amountOfGas.toRadixString(16)}',
           if (gasPrice != null)
-            'gasPrice': '0x${amountOfGas.toRadixString(16)}',
+            'gasPrice': '0x${gasPrice.toRadixString(16)}',
           if (value != null) 'value' : '0x${value.getInWei.toRadixString(16)}',
           if (data != null) 'data': bytesToHex(data, include0x: true),
         },
