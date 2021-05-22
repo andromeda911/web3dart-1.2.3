@@ -46,9 +46,7 @@ class Web3Client {
   /// methods like [credentialsFromPrivateKey] or [sendTransaction] will use
   /// a background isolate instead of blocking the main thread. This feature
   /// is experimental at the moment.
-  Web3Client(String url, Client httpClient,
-      {bool enableBackgroundIsolate = false, this.socketConnector})
-      : _jsonRpc = JsonRPC(url, httpClient) {
+  Web3Client(String url, Client httpClient, {bool enableBackgroundIsolate = false, this.socketConnector}) : _jsonRpc = JsonRPC(url, httpClient) {
     _operations = _ExpensiveOperations(enableBackgroundIsolate);
     _filters = _FilterEngine(this);
   }
@@ -68,8 +66,7 @@ class Web3Client {
   }
 
   rpc.Peer _connectWithPeer() {
-    if (_streamRpcPeer != null && !_streamRpcPeer.isClosed)
-      return _streamRpcPeer;
+    if (_streamRpcPeer != null && !_streamRpcPeer.isClosed) return _streamRpcPeer;
     if (socketConnector == null) return null;
 
     final socket = socketConnector();
@@ -162,8 +159,7 @@ class Web3Client {
 
   /// Returns the amount of hashes per second the connected node is mining with.
   Future<int> getMiningHashrate() {
-    return _makeRPCCall<String>('eth_hashrate')
-        .then((s) => hexToInt(s).toInt());
+    return _makeRPCCall<String>('eth_hashrate').then((s) => hexToInt(s).toInt());
   }
 
   /// Returns the amount of Ether typically needed to pay for one unit of gas.
@@ -178,8 +174,7 @@ class Web3Client {
 
   /// Returns the number of the most recent block on the chain.
   Future<int> getBlockNumber() {
-    return _makeRPCCall<String>('eth_blockNumber')
-        .then((s) => hexToInt(s).toInt());
+    return _makeRPCCall<String>('eth_blockNumber').then((s) => hexToInt(s).toInt());
   }
 
   /// Gets the balance of the account with the specified address.
@@ -189,8 +184,7 @@ class Web3Client {
   Future<EtherAmount> getBalance(EthereumAddress address, {BlockNum atBlock}) {
     final blockParam = _getBlockParam(atBlock);
 
-    return _makeRPCCall<String>('eth_getBalance', [address.hex, blockParam])
-        .then((data) {
+    return _makeRPCCall<String>('eth_getBalance', [address.hex, blockParam]).then((data) {
       return EtherAmount.fromUnitAndValue(EtherUnit.wei, hexToInt(data));
     });
   }
@@ -201,15 +195,10 @@ class Web3Client {
   /// more details.
   /// This function allows specifying a custom block mined in the past to get
   /// historical data. By default, [BlockNum.current] will be used.
-  Future<Uint8List> getStorage(EthereumAddress address, BigInt position,
-      {BlockNum atBlock}) {
+  Future<Uint8List> getStorage(EthereumAddress address, BigInt position, {BlockNum atBlock}) {
     final blockParam = _getBlockParam(atBlock);
 
-    return _makeRPCCall<String>('eth_getStorageAt', [
-      address.hex,
-      '0x${position.toRadixString(16)}',
-      blockParam
-    ]).then(hexToBytes);
+    return _makeRPCCall<String>('eth_getStorageAt', [address.hex, '0x${position.toRadixString(16)}', blockParam]).then(hexToBytes);
   }
 
   /// Gets the amount of transactions issued by the specified [address].
@@ -219,24 +208,26 @@ class Web3Client {
   Future<int> getTransactionCount(EthereumAddress address, {BlockNum atBlock}) {
     final blockParam = _getBlockParam(atBlock);
 
-    return _makeRPCCall<String>(
-            'eth_getTransactionCount', [address.hex, blockParam])
-        .then((hex) => hexToInt(hex).toInt());
+    return _makeRPCCall<String>('eth_getTransactionCount', [address.hex, blockParam]).then((hex) => hexToInt(hex).toInt());
   }
 
   /// Returns the information about a transaction requested by transaction hash
   /// [transactionHash].
   Future<TransactionInformation> getTransactionByHash(String transactionHash) {
-    return _makeRPCCall<Map<String, dynamic>>(
-            'eth_getTransactionByHash', [transactionHash])
-        .then((s) => TransactionInformation.fromMap(s));
+    return _makeRPCCall<Map<String, dynamic>>('eth_getTransactionByHash', [transactionHash]).then((s) {
+      try {
+        return TransactionInformation.fromMap(s);
+      } catch (e, st) {
+        print(s);
+        print(e);
+        print(st);
+      }
+    });
   }
 
   /// Returns an receipt of a transaction based on its hash.
   Future<TransactionReceipt> getTransactionReceipt(String hash) {
-    return _makeRPCCall<Map<String, dynamic>>(
-            'eth_getTransactionReceipt', [hash])
-        .then((s) => s != null ? TransactionReceipt.fromJson(s) : null);
+    return _makeRPCCall<Map<String, dynamic>>('eth_getTransactionReceipt', [hash]).then((s) => s != null ? TransactionReceipt.fromJson(s) : null);
   }
 
   /// Gets the code of a contract at the specified [address]
@@ -244,8 +235,7 @@ class Web3Client {
   /// This function allows specifying a custom block mined in the past to get
   /// historical data. By default, [BlockNum.current] will be used.
   Future<Uint8List> getCode(EthereumAddress address, {BlockNum atBlock}) {
-    return _makeRPCCall<String>(
-        'eth_getCode', [address.hex, _getBlockParam(atBlock)]).then(hexToBytes);
+    return _makeRPCCall<String>('eth_getCode', [address.hex, _getBlockParam(atBlock)]).then(hexToBytes);
   }
 
   /// Signs the given transaction using the keys supplied in the [cred]
@@ -254,13 +244,10 @@ class Web3Client {
   /// Returns a hash of the transaction which, after the transaction has been
   /// included in a mined block, can be used to obtain detailed information
   /// about the transaction.
-  Future<String> sendTransaction(Credentials cred, Transaction transaction,
-      {int chainId = 1, bool fetchChainIdFromNetworkId = false}) async {
-    final signed = await signTransaction(cred, transaction,
-        chainId: chainId, fetchChainIdFromNetworkId: fetchChainIdFromNetworkId);
+  Future<String> sendTransaction(Credentials cred, Transaction transaction, {int chainId = 1, bool fetchChainIdFromNetworkId = false}) async {
+    final signed = await signTransaction(cred, transaction, chainId: chainId, fetchChainIdFromNetworkId: fetchChainIdFromNetworkId);
 
-    return _makeRPCCall('eth_sendRawTransaction',
-        [bytesToHex(signed, include0x: true, padToEvenLength: true)]);
+    return _makeRPCCall('eth_sendRawTransaction', [bytesToHex(signed, include0x: true, padToEvenLength: true)]);
   }
 
   /// Signs the [transaction] with the credentials [cred]. The transaction will
@@ -269,8 +256,7 @@ class Web3Client {
   /// See also:
   ///  - [bytesToHex], which can be used to get the more common hexadecimal
   /// representation of the transaction.
-  Future<Uint8List> signTransaction(Credentials cred, Transaction transaction,
-      {int chainId = 1, bool fetchChainIdFromNetworkId = false}) async {
+  Future<Uint8List> signTransaction(Credentials cred, Transaction transaction, {int chainId = 1, bool fetchChainIdFromNetworkId = false}) async {
     final signingInput = await _fillMissingData(
       credentials: cred,
       transaction: transaction,
@@ -329,9 +315,8 @@ class Web3Client {
           if (sender != null) 'from': sender.hex,
           if (to != null) 'to': to.hex,
           if (amountOfGas != null) 'gas': '0x${amountOfGas.toRadixString(16)}',
-          if (gasPrice != null)
-            'gasPrice': '0x${gasPrice.getInWei.toRadixString(16)}',
-          if (value != null) 'value' : '0x${value.getInWei.toRadixString(16)}',
+          if (gasPrice != null) 'gasPrice': '0x${gasPrice.getInWei.toRadixString(16)}',
+          if (value != null) 'value': '0x${value.getInWei.toRadixString(16)}',
           if (data != null) 'data': bytesToHex(data, include0x: true),
         },
       ],
@@ -354,11 +339,7 @@ class Web3Client {
   /// See also:
   /// - [call], which automatically encodes function parameters and parses a
   /// response.
-  Future<String> callRaw(
-      {EthereumAddress sender,
-      @required EthereumAddress contract,
-      @required Uint8List data,
-      BlockNum atBlock}) {
+  Future<String> callRaw({EthereumAddress sender, @required EthereumAddress contract, @required Uint8List data, BlockNum atBlock}) {
     final call = {
       'to': contract.hex,
       'data': bytesToHex(data, include0x: true, padToEvenLength: true),
